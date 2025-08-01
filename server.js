@@ -1,66 +1,63 @@
 import express from 'express';
-import axios from 'axios';
-import * as cheerio from 'cheerio';
+import RSSParser from 'rss-parser';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const sources = [
-  {
-    name: "TechCrunch",
-    url: "https://techcrunch.com/",
-    selector: "article a",
-  },
-  {
-    name: "The Verge",
-    url: "https://www.theverge.com/",
-    selector: "h2.c-entry-box--compact__title a",
-  },
+const parser = new RSSParser();
+
+// You can later turn this into a DB or allow user input
+const feeds = [
+  { name: "TechCrunch", url: "https://techcrunch.com/feed/" },
+  { name: "The Verge", url: "https://www.theverge.com/rss/index.xml" },
+  { name: "BBC", url: "http://feeds.bbci.co.uk/news/rss.xml" },
+  { name: "CNN", url: "http://rss.cnn.com/rss/edition.rss" },
 ];
 
-async function crawl() {
-  const articles = [];
+app.get('/crawl', async (req, res) => {
+  const { limit = 10, source, q } = req.query;
 
-  for (const site of sources) {
+  let selectedFeeds = feeds;
+  if (source) {
+    selectedFeeds = feeds.filter(f =>
+      f.name.toLowerCase().includes(source.toLowerCase())
+    );
+  }
+
+  const allItems = [];
+
+  for (const feed of selectedFeeds) {
     try {
-      const res = await axios.get(site.url);
-      const $ = cheerio.load(res.data);
+      const result = await parser.parseURL(feed.url);
+      const items = result.items.map(item => ({
+        title: item.title,
+        link: item.link,
+        pubDate: item.pubDate,
+        source: feed.name
+      }));
 
-      $(site.selector).each((_, el) => {
-        const title = $(el).text().trim();
-        const link = $(el).attr("href");
-
-        if (title && link) {
-          articles.push({ title, link, source: site.name });
-        }
-      });
+      allItems.push(...items);
     } catch (err) {
-      console.error(`❌ Error on ${site.name}:`, err.message);
+      console.error(`❌ Failed to parse ${feed.name}`, err.message);
     }
   }
 
-  return articles;
-}
+  // Sort by date descending
+  const sorted = allItems
+    .filter(item => item.title && item.link)
+    .filter(item =>
+      q ? item.title.toLowerCase().includes(q.toLowerCase()) : true
+    )
+    .sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate))
+    .slice(0, parseInt(limit));
 
-// API endpoint
-app.get('/crawl', async (req, res) => {
-  const articles = await crawl();
   res.json({
     status: "ok",
-    count: articles.length,
-    data: articles
+    count: sorted.length,
+    data: sorted
   });
 });
 
-// Home
-app.get('/', (req, res) => {
-  res.send(`
-    <h1>🕷️ NodeJS Crawler</h1>
-    <p>Visit <a href="/crawl">/crawl</a> to trigger crawl and see raw logs.</p>
-  `);
-});
-
-// Start server
 app.listen(PORT, () => {
-  console.log(`🚀 Server listening on http://localhost:${PORT}`);
+  console.log(`📰 RSS Crawler Server running at http://localhost:${PORT}`);
 });
