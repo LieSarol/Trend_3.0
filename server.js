@@ -1,11 +1,13 @@
 import express from 'express';
 import RSSParser from 'rss-parser';
+import Mercury from '@postlight/mercury-parser';
+import fetch from 'node-fetch'; // For older Node versions; optional if you're on Node 18+
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const parser = new RSSParser();
 
-// 🧩 Define feeds before using them
+// 🧩 Define feeds
 const feeds = [
   {
     name: "TechCrunch",
@@ -61,12 +63,30 @@ app.get('/crawl', async (req, res) => {
           source: feed.name
         };
 
+        // Add basic RSS content if requested
         if (full) {
           article.description = item.contentSnippet || item.summary || null;
           article.content = item['content:encoded'] || item.content || null;
           article.categories = item.categories || [];
           article.author = item.creator || item.author || null;
           article.image = item.enclosure?.url || null;
+        }
+
+        // 🧠 Mercury Parser for deep full content
+        if (full === 'deep') {
+          try {
+            const mercuryResult = await Mercury.parse(item.link);
+
+            article.title = mercuryResult.title || article.title;
+            article.content = mercuryResult.content || article.content;
+            article.description = mercuryResult.excerpt || article.description;
+            article.author = mercuryResult.author || article.author;
+            article.image = mercuryResult.lead_image_url || article.image;
+            article.date_published = mercuryResult.date_published || article.pubDate;
+            article.domain = mercuryResult.domain;
+          } catch (err) {
+            console.error(`🛑 Mercury failed for ${item.link}`, err.message);
+          }
         }
 
         allItems.push(article);
