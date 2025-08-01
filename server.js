@@ -5,17 +5,40 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const parser = new RSSParser();
 
+// 🧩 Define feeds before using them
+const feeds = [
+  {
+    name: "TechCrunch",
+    url: "https://techcrunch.com/feed/",
+    type: "news"
+  },
+  {
+    name: "The Verge",
+    url: "https://www.theverge.com/rss/index.xml",
+    type: "news"
+  },
+  {
+    name: "Smashing Magazine",
+    url: "https://www.smashingmagazine.com/feed/",
+    type: "blogs"
+  },
+  {
+    name: "CSS-Tricks",
+    url: "https://css-tricks.com/feed/",
+    type: "blogs"
+  }
+];
+
+// 🚀 Main crawler route
 app.get('/crawl', async (req, res) => {
   const { type, source, limit = 10, q, full } = req.query;
 
   let selectedFeeds = feeds;
 
-  // 🔎 Filter by type (e.g. news, blogs)
   if (type) {
     selectedFeeds = selectedFeeds.filter(f => f.type === type);
   }
 
-  // 🔎 Filter by source name (e.g. bbc, verge)
   if (source) {
     selectedFeeds = selectedFeeds.filter(f =>
       f.name.toLowerCase().includes(source.toLowerCase())
@@ -29,7 +52,6 @@ app.get('/crawl', async (req, res) => {
       const result = await parser.parseURL(feed.url);
 
       for (const item of result.items) {
-        // Optional keyword filtering
         if (q && !item.title?.toLowerCase().includes(q.toLowerCase())) continue;
 
         const article = {
@@ -39,7 +61,6 @@ app.get('/crawl', async (req, res) => {
           source: feed.name
         };
 
-        // Add extra metadata if `?full=1`
         if (full) {
           article.description = item.contentSnippet || item.summary || null;
           article.content = item['content:encoded'] || item.content || null;
@@ -56,7 +77,6 @@ app.get('/crawl', async (req, res) => {
     }
   }
 
-  // 🧹 Sort by pubDate descending
   const sorted = allItems
     .filter(item => item.title && item.link)
     .sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate))
@@ -72,5 +92,5 @@ app.get('/crawl', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🧠 Crawler API running at http://localhost:${PORT}`);
+  console.log(`🔥 RSS Crawler running at http://localhost:${PORT}`);
 });
