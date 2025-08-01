@@ -1,8 +1,10 @@
-import { serve } from "bun";
-import axios from "axios";
-import cheerio from "cheerio";
+import express from 'express';
+import axios from 'axios';
+import cheerio from 'cheerio';
 
-// 🔍 Target sites to crawl
+const app = express();
+const PORT = process.env.PORT || 3000;
+
 const sources = [
   {
     name: "TechCrunch",
@@ -16,7 +18,6 @@ const sources = [
   },
 ];
 
-// 🕷️ The crawler function
 async function crawl() {
   const articles = [];
 
@@ -28,6 +29,7 @@ async function crawl() {
       $(site.selector).each((_, el) => {
         const title = $(el).text().trim();
         const link = $(el).attr("href");
+
         if (title && link) {
           articles.push({ title, link, source: site.name });
         }
@@ -40,30 +42,25 @@ async function crawl() {
   return articles;
 }
 
-// 🚀 The API server
-serve({
-  port: 3000,
-  fetch: async (req) => {
-    const url = new URL(req.url);
+// API endpoint
+app.get('/crawl', async (req, res) => {
+  const articles = await crawl();
+  res.json({
+    status: "ok",
+    count: articles.length,
+    data: articles
+  });
+});
 
-    if (url.pathname === "/crawl") {
-      const articles = await crawl();
-      return new Response(JSON.stringify({
-        status: "ok",
-        count: articles.length,
-        data: articles
-      }, null, 2), {
-        headers: {
-          "Content-Type": "application/json"
-        }
-      });
-    }
+// Home
+app.get('/', (req, res) => {
+  res.send(`
+    <h1>🕷️ NodeJS Crawler</h1>
+    <p>Visit <a href="/crawl">/crawl</a> to trigger crawl and see raw logs.</p>
+  `);
+});
 
-    return new Response(`
-      <h1>🕷️ NodeJS-Style Crawler Server</h1>
-      <p>Go to <a href="/crawl">/crawl</a> to fetch latest articles in raw JSON.</p>
-    `, {
-      headers: { "Content-Type": "text/html" }
-    });
-  },
+// Start server
+app.listen(PORT, () => {
+  console.log(`🚀 Server listening on http://localhost:${PORT}`);
 });
