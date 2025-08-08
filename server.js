@@ -111,6 +111,10 @@ app.get('/crawl', async (req, res) => {
   });
 });
 
+app.get('/', (req, res) => {
+  res.send('I have crush on Precious.');
+});
+
 app.listen(PORT, () => {
   console.log(`🔥 RSS Crawler running at http://localhost:${PORT}`);
 });
