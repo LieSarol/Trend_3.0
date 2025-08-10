@@ -22,8 +22,8 @@ function log(...args) {
 
 // 🚀 Main crawler route
 app.get('/crawl', async (req, res) => {
-  const { type, source, limit = 10, q, full } = req.query;
-  log("📥 Incoming request:", { type, source, limit, q, full });
+  const { type, source, q } = req.query;
+  log("📥 Incoming request:", { type, source, q });
 
   let selectedFeeds = feeds;
 
@@ -48,66 +48,34 @@ app.get('/crawl', async (req, res) => {
       log(`✅ Parsed ${feed.name} - ${result.items.length} items found`);
 
       for (const item of result.items) {
-        log(`📄 Processing item:`, { title: item.title, link: item.link });
-
         if (q && !item.title?.toLowerCase().includes(q.toLowerCase())) {
           log(`⏭ Skipping due to query filter: "${q}"`);
           continue;
         }
-
-        const article = {
-          title: item.title,
-          link: item.link,
-          pubDate: item.pubDate,
-          source: feed.name
-        };
-
-        if (full) {
-          article.description = item.contentSnippet || item.summary || null;
-          article.content = item['content:encoded'] || item.content || null;
-          article.categories = item.categories || [];
-          article.author = item.creator || item.author || null;
-          article.image = item.enclosure?.url || null;
+        if (item.link) {
+          allItems.push({ link: item.link, pubDate: item.pubDate });
         }
-
-        if (full === 'deep') {
-          log(`🔎 Deep parsing via Mercury: ${item.link}`);
-          try {
-            const mercuryResult = await Mercury.parse(item.link);
-            log(`📥 Mercury raw result:`, mercuryResult);
-
-            article.title = mercuryResult.title || article.title;
-            article.content = mercuryResult.content || article.content;
-            article.description = mercuryResult.excerpt || article.description;
-            article.author = mercuryResult.author || article.author;
-            article.image = mercuryResult.lead_image_url || article.image;
-            article.date_published = mercuryResult.date_published || article.pubDate;
-            article.domain = mercuryResult.domain;
-          } catch (err) {
-            log(`🛑 Mercury failed for ${item.link}:`, err);
-          }
-        }
-
-        allItems.push(article);
       }
     } catch (err) {
       log(`❌ Failed to parse ${feed.name}:`, err);
     }
   }
 
-  const sorted = allItems
-    .filter(item => item.title && item.link)
-    .sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate))
-    .slice(0, parseInt(limit));
+  // Sort items by newest pubDate first
+  allItems.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
 
-  log(`📊 Final result count: ${sorted.length}`);
+  // Grab the freshest link (the first one)
+  const firstLink = allItems.length > 0 ? allItems[0].link : null;
+
+  log(`📊 Returning single link:`, firstLink);
+
+  if (!firstLink) {
+    return res.status(404).json({ status: "error", message: "No links found" });
+  }
 
   res.json({
     status: "ok",
-    type: type || "all",
-    source: source || "all",
-    count: sorted.length,
-    data: sorted
+    link: firstLink
   });
 });
 
