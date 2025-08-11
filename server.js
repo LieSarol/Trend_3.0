@@ -12,7 +12,7 @@ const feeds = [
   { name: "TechCrunch", url: "https://techcrunch.com/feed/", type: "news" },
   { name: "The Verge", url: "https://www.theverge.com/rss/index.xml", type: "news" },
   { name: "Smashing Magazine", url: "https://www.smashingmagazine.com/feed/", type: "blogs" },
-  { name: "CSS-Tricks", url: "https://css-tricks.com/feed/", type: "blogs" }
+  { name: "BuzzFeed", url: "https://www.buzzfeed.com/index.xml", type: "blogs" }  // swapped here
 ];
 
 // Timestamped logger
