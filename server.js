@@ -22,8 +22,8 @@ function log(...args) {
 
 // 🚀 Main crawler route
 app.get('/crawl', async (req, res) => {
-  const { type, source, q } = req.query;
-  log("📥 Incoming request:", { type, source, q });
+  const { type, source, q, mode } = req.query; // Added `mode` param
+  log("📥 Incoming request:", { type, source, q, mode });
 
   let selectedFeeds = feeds;
 
@@ -61,21 +61,27 @@ app.get('/crawl', async (req, res) => {
     }
   }
 
-  // Sort items by newest pubDate first
-  allItems.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
-
-  // Grab the freshest link (the first one)
-  const firstLink = allItems.length > 0 ? allItems[0].link : null;
-
-  log(`📊 Returning single link:`, firstLink);
-
-  if (!firstLink) {
+  if (allItems.length === 0) {
     return res.status(404).json({ status: "error", message: "No links found" });
+  }
+
+  let chosenLink;
+
+  if (mode === "latest") {
+    // Old behavior — newest link first
+    allItems.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
+    chosenLink = allItems[0].link;
+    log(`📊 Returning latest link:`, chosenLink);
+  } else {
+    // Default/random behavior
+    const randomIndex = Math.floor(Math.random() * allItems.length);
+    chosenLink = allItems[randomIndex].link;
+    log(`📊 Returning random link:`, chosenLink);
   }
 
   res.json({
     status: "ok",
-    link: firstLink
+    link: chosenLink
   });
 });
 
