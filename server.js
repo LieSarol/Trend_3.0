@@ -13,6 +13,7 @@ const feeds = [
   { name: "The Verge", url: "https://www.theverge.com/rss/index.xml", type: "news" },
   { name: "Smashing Magazine", url: "https://www.smashingmagazine.com/feed/", type: "blogs" },
   { name: "CNN News", url: "http://rss.cnn.com/rss/cnn_topstories.rss", type: "news" }
+  { name: "Minecraft News", url: "https://news.google.com/rss/search?q=Minecraft", type: "news" }
 ];
 
 // Timestamped logger
