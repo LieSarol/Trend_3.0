@@ -23,7 +23,7 @@ function log(...args) {
 
 // 🚀 Main crawler route
 app.get('/crawl', async (req, res) => {
-  const { type, source, q, mode } = req.query; // Added `mode` param
+  const { type, source, q, mode } = req.query;
   log("📥 Incoming request:", { type, source, q, mode });
 
   let selectedFeeds = feeds;
@@ -54,7 +54,13 @@ app.get('/crawl', async (req, res) => {
           continue;
         }
         if (item.link) {
-          allItems.push({ link: item.link, pubDate: item.pubDate });
+          allItems.push({
+            link: item.link,
+            title: item.title || "No title",
+            author: item.creator || item.author || "Unknown", // 🧑 Author
+            source: feed.name,                                // 📰 Source
+            pubDate: item.pubDate || null                     // ⏰ Publish time
+          });
         }
       }
     } catch (err) {
@@ -66,23 +72,21 @@ app.get('/crawl', async (req, res) => {
     return res.status(404).json({ status: "error", message: "No links found" });
   }
 
-  let chosenLink;
+  let chosenItem;
 
   if (mode === "latest") {
-    // Old behavior — newest link first
     allItems.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
-    chosenLink = allItems[0].link;
-    log(`📊 Returning latest link:`, chosenLink);
+    chosenItem = allItems[0];
+    log(`📊 Returning latest item:`, chosenItem.link);
   } else {
-    // Default/random behavior
     const randomIndex = Math.floor(Math.random() * allItems.length);
-    chosenLink = allItems[randomIndex].link;
-    log(`📊 Returning random link:`, chosenLink);
+    chosenItem = allItems[randomIndex];
+    log(`📊 Returning random item:`, chosenItem.link);
   }
 
   res.json({
     status: "ok",
-    link: chosenLink
+    ...chosenItem
   });
 });
 
