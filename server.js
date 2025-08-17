@@ -42,6 +42,14 @@ app.get('/crawl', async (req, res) => {
 
   const allItems = [];
 
+  // 🔧 helper to clean authors like "email (Name)" -> "Name"
+  function cleanAuthor(author) {
+    if (!author) return "Unknown";
+    const match = author.match(/\(([^)]+)\)/);
+    if (match) return match[1].trim();
+    return author.trim();
+  }
+
   for (const feed of selectedFeeds) {
     log(`🌐 Fetching feed: ${feed.name} (${feed.url})`);
     try {
@@ -54,12 +62,19 @@ app.get('/crawl', async (req, res) => {
           continue;
         }
         if (item.link) {
+          const rawAuthor =
+            item.creator ||
+            item.author ||
+            item["dc:creator"] ||
+            item["itunes:author"] ||
+            item["media:credit"];
+
           allItems.push({
             link: item.link,
             title: item.title || "No title",
-            author: item.creator || item.author || "Unknown", // 🧑 Author
-            source: feed.name,                                // 📰 Source
-            pubDate: item.pubDate || null                     // ⏰ Publish time
+            author: cleanAuthor(rawAuthor), // 🧑 Cleaned-up author
+            source: feed.name,              // 📰 Source
+            pubDate: item.pubDate || null   // ⏰ Publish time
           });
         }
       }
