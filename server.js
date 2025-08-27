@@ -13,8 +13,20 @@ const feeds = [
   { name: "The Verge", url: "https://www.theverge.com/rss/index.xml", type: "news" },
   { name: "Smashing Magazine", url: "https://www.smashingmagazine.com/feed/", type: "blogs" },
   { name: "CNN News", url: "http://rss.cnn.com/rss/cnn_topstories.rss", type: "news" },
-  { name: "Minecraft News", url: "https://news.google.com/rss/search?q=Minecraft", type: "news" }
-];
+  { name: "Minecraft News", url: "https://news.google.com/rss/search?q=Minecraft", type: "news" },
+
+  // Tech/design blogs
+  { name: "CSS-Tricks", url: "https://css-tricks.com/feed/", type: "blogs" },
+  { name: "A List Apart", url: "https://alistapart.com/main/feed/", type: "blogs" },
+  { name: "David Walsh Blog", url: "https://davidwalsh.name/feed", type: "blogs" },
+  { name: "Codrops", url: "https://tympanus.net/codrops/feed/", type: "blogs" },
+
+  // Life hacks & healthcare blogs
+  { name: "Lifehacker", url: "https://lifehacker.com/rss", type: "blogs" },
+  { name: "Marc and Angel Hack Life", url: "https://www.marcandangel.com/feed/", type: "blogs" },
+  { name: "Harvard Health Blog", url: "https://www.health.harvard.edu/blog/feed", type: "blogs" },
+  { name: "Healthline", url: "https://www.healthline.com/rss", type: "blogs" }
+]; 
 
 // Timestamped logger
 function log(...args) {
